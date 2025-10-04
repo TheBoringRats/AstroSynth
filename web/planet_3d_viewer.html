@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Planet Viewer</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: #000000;
+        font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+      }
+
+      #canvas-container {
+        width: 100vw;
+        height: 100vh;
+        pointer-events: auto;
+      }
+
+      #loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 24px;
+        z-index: 100;
+        pointer-events: none;
+        text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+      }
+
+      #info-panel {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(10, 10, 30, 0.85);
+        color: white;
+        padding: 24px;
+        border-radius: 16px;
+        max-width: 320px;
+        z-index: 50;
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        pointer-events: auto;
+        transition: all 0.3s ease;
+      }
+
+      #info-panel:hover {
+        background: rgba(15, 15, 40, 0.9);
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      }
+
+      #info-panel h2 {
+        margin-bottom: 16px;
+        font-size: 22px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      #controls {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 12px;
+        z-index: 50;
+        pointer-events: auto;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 90vw;
+      }
+
+      .control-btn {
+        background: rgba(255, 255, 255, 0.12);
+        border: 1.5px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 14px 28px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 600;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(16px) saturate(180%);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        pointer-events: auto;
+        user-select: none;
+      }
+
+      .control-btn:hover {
+        background: rgba(255, 255, 255, 0.22);
+        border-color: rgba(255, 255, 255, 0.4);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+      }
+
+      .control-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .info-item {
+        margin: 12px 0;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .info-item:last-child {
+        border-bottom: none;
+      }
+
+      .info-label {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 6px;
+        font-weight: 600;
+      }
+
+      .info-value {
+        font-size: 17px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.95);
+        letter-spacing: 0.3px;
+      }
+
+      /* Responsive design */
+      @media (max-width: 768px) {
+        #info-panel {
+          max-width: 280px;
+          padding: 18px;
+          top: 10px;
+          left: 10px;
+        }
+
+        #controls {
+          bottom: 20px;
+          gap: 8px;
+        }
+
+        .control-btn {
+          padding: 12px 20px;
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loading">Generating 3D World...</div>
+    <div id="canvas-container"></div>
+
+    <div id="info-panel">
+      <h2 id="planet-name">Planet Name</h2>
+      <div class="info-item">
+        <div class="info-label">Biome</div>
+        <div class="info-value" id="biome">Loading...</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Temperature</div>
+        <div class="info-value" id="temperature">Loading...</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Gravity</div>
+        <div class="info-value" id="gravity">Loading...</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Atmosphere</div>
+        <div class="info-value" id="atmosphere">Loading...</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Life Forms</div>
+        <div class="info-value" id="lifeforms">Loading...</div>
+      </div>
+    </div>
+
+    <div id="controls">
+      <button class="control-btn" id="biome-selector">🔄 Select Biome</button>
+      <button class="control-btn" id="regenerate">🔄 Regenerate</button>
+      <button class="control-btn" id="toggle-time">☀️ Toggle Time</button>
+      <button class="control-btn" id="free-cam">📷 Free Cam</button>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      import { ImprovedNoise } from "three/addons/math/ImprovedNoise.js";
+
+      class PlanetGenerator {
+        constructor() {
+          this.scene = null;
+          this.camera = null;
+          this.renderer = null;
+          this.controls = null;
+          this.terrain = null;
+          this.water = null;
+          this.planetData = null;
+          this.isDayTime = true;
+          this.freeCamEnabled = false;
+
+          // Noise generators
+          this.perlin = new ImprovedNoise();
+        }
+
+        init() {
+          // Scene setup
+          this.scene = new THREE.Scene();
+          this.scene.background = new THREE.Color(0x000814);
+          this.scene.fog = new THREE.FogExp2(0x000814, 0.0015);
+
+          // Camera
+          this.camera = new THREE.PerspectiveCamera(
+            60,
+            window.innerWidth / window.innerHeight,
+            1,
+            10000
+          );
+          this.camera.position.set(0, 50, 300);
+
+          // Renderer
+          this.renderer = new THREE.WebGLRenderer({ antialias: true });
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+          this.renderer.shadowMap.enabled = true;
+          this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+          document
+            .getElementById("canvas-container")
+            .appendChild(this.renderer.domElement);
+
+          // Controls
+          this.controls = new OrbitControls(
+            this.camera,
+            this.renderer.domElement
+          );
+          this.controls.enableDamping = true;
+          this.controls.dampingFactor = 0.05;
+          // Default zoom limits (will be updated dynamically based on planet size)
+          this.controls.maxDistance = 800;
+          this.controls.minDistance = 120;
+          this.controls.autoRotate = false;
+          this.controls.autoRotateSpeed = 0.5;
+
+          // Lights
+          this.setupLights();
+
+          // Stars background
+          this.createStarField();
+
+          // Event listeners
+          window.addEventListener("resize", () => this.onWindowResize());
+          this.setupControls();
+
+          // Listen for messages from Flutter
+          window.addEventListener("message", (event) => {
+            try {
+              // Handle both string (JSON) and object messages
+              let data = event.data;
+
+              // If it's a string, try to parse as JSON
+              if (typeof data === "string") {
+                data = JSON.parse(data);
+              }
+
+              // Check if it's planet data
+              if (data && data.type === "planetData" && data.data) {
+                console.log(
+                  "[3D-VIEWER] Received planet data:",
+                  data.data.name
+                );
+                this.loadPlanetData(data.data);
+              }
+
+              // Check if it's AI enhancement code
+              if (data && data.type === "enhancementCode" && data.code) {
+                console.log(
+                  "[AI-ENHANCE] Received enhancement code:",
+                  data.fromCache ? "CACHED" : "GENERATED"
+                );
+                this.applyEnhancementCode(data.code, data.fromCache);
+              }
+            } catch (e) {
+              // Ignore parsing errors (might be other messages)
+              console.debug("Message parsing skipped:", e);
+            }
+          });
+
+          // Animation loop
+          this.animate();
+
+          // Hide loading
+          document.getElementById("loading").style.display = "none";
+        }
+
+        setupLights() {
+          // Ambient light (represents scattered starlight)
+          const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
+          this.scene.add(ambientLight);
+
+          // Star light (directional light) - color will be set based on stellar type
+          this.sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+          this.sunLight.position.set(500, 500, 500);
+          this.sunLight.castShadow = true;
+          this.sunLight.shadow.camera.left = -500;
+          this.sunLight.shadow.camera.right = 500;
+          this.sunLight.shadow.camera.top = 500;
+          this.sunLight.shadow.camera.bottom = -500;
+          this.sunLight.shadow.mapSize.width = 2048;
+          this.sunLight.shadow.mapSize.height = 2048;
+          this.scene.add(this.sunLight);
+
+          // Hemisphere light for atmospheric scattering
+          this.hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x362503, 0.4);
+          this.scene.add(this.hemiLight);
+        }
+
+        updateStarLighting(stellarType, stellarTemp) {
+          // Set star light color based on stellar type and temperature
+          // Temperature to color mapping (simplified black body)
+          let starColor = 0xffffff; // Default white (Sun-like)
+          let intensity = 1.5;
+
+          if (stellarTemp) {
+            if (stellarTemp < 3500) {
+              // M-class red dwarf
+              starColor = 0xff8866;
+              intensity = 1.2; // Dimmer
+            } else if (stellarTemp < 5000) {
+              // K-class orange dwarf
+              starColor = 0xffcc88;
+              intensity = 1.3;
+            } else if (stellarTemp < 6000) {
+              // G-class (Sun-like)
+              starColor = 0xffffff;
+              intensity = 1.5;
+            } else if (stellarTemp < 7500) {
+              // F-class white
+              starColor = 0xffffee;
+              intensity = 1.7;
+            } else if (stellarTemp < 10000) {
+              // A-class blue-white
+              starColor = 0xeeeeff;
+              intensity = 1.9;
+            } else {
+              // B-class or hotter - blue
+              starColor = 0xccddff;
+              intensity = 2.0;
+            }
+          } else if (stellarType) {
+            // Fallback to spectral type if temperature not available
+            const spectralClass = stellarType.charAt(0);
+            if (spectralClass === "M") {
+              starColor = 0xff8866;
+              intensity = 1.2;
+            } else if (spectralClass === "K") {
+              starColor = 0xffcc88;
+              intensity = 1.3;
+            } else if (spectralClass === "F") {
+              starColor = 0xffffee;
+              intensity = 1.7;
+            } else if (spectralClass === "A") {
+              starColor = 0xeeeeff;
+              intensity = 1.9;
+            } else if (spectralClass === "B" || spectralClass === "O") {
+              starColor = 0xccddff;
+              intensity = 2.0;
+            }
+          }
+
+          this.sunLight.color.setHex(starColor);
+          this.sunLight.intensity = intensity;
+
+          console.log(
+            `[3D-VIEWER] Star lighting: ${stellarType || "Unknown"} (${
+              stellarTemp || "N/A"
+            }K) - Color: #${starColor.toString(16)}, Intensity: ${intensity}`
+          );
+        }
+
+        createStarField() {
+          const starsGeometry = new THREE.BufferGeometry();
+          const starsMaterial = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 1,
+            transparent: true,
+          });
+
+          const starsVertices = [];
+          for (let i = 0; i < 10000; i++) {
+            const x = (Math.random() - 0.5) * 4000;
+            const y = (Math.random() - 0.5) * 4000;
+            const z = (Math.random() - 0.5) * 4000;
+            starsVertices.push(x, y, z);
+          }
+
+          starsGeometry.setAttribute(
+            "position",
+            new THREE.Float32BufferAttribute(starsVertices, 3)
+          );
+          const stars = new THREE.Points(starsGeometry, starsMaterial);
+          this.scene.add(stars);
+        }
+
+        loadPlanetData(data) {
+          this.planetData = data;
+          console.log("[3D-VIEWER] ===== RAW DATA RECEIVED =====");
+          console.log(
+            "[3D-VIEWER] Full data object:",
+            JSON.stringify(data, null, 2)
+          );
+          console.log("[3D-VIEWER] Data keys:", Object.keys(data));
+          console.log("[3D-VIEWER] ============================");
+          console.log("[3D-VIEWER] Loading planet:", data.name);
+          console.log("[3D-VIEWER] Using REAL NASA DATA for 3D generation:");
+          console.log("[3D-VIEWER] - Biome:", data.biome);
+          console.log("[3D-VIEWER] - Temperature:", data.temperature, "K");
+          console.log("[3D-VIEWER] - Mass:", data.mass, "Earth masses");
+          console.log("[3D-VIEWER] - Radius:", data.radius, "Earth radii");
+          console.log("[3D-VIEWER] - Gravity:", data.gravity.toFixed(2), "g");
+          console.log("[3D-VIEWER] - Stellar Type:", data.stellarType);
+          console.log(
+            "[3D-VIEWER] - Tectonic Activity:",
+            data.tectonicActivity
+          );
+          console.log("[3D-VIEWER] Planet Data:", {
+            mass: data.mass,
+            radius: data.radius,
+            temperature: data.temperature,
+            biome: data.biome,
+            gravity: data.gravity,
+            stellarType: data.stellarType,
+            stellarTemp: data.stellarTemperature,
+            tidalLock: data.isTidallyLocked,
+            tectonics: data.tectonicActivity,
+          });
+
+          // Update star lighting based on host star properties
+          this.updateStarLighting(data.stellarType, data.stellarTemperature);
+
+          this.updateInfoPanel();
+          this.generatePlanet();
+        }
+
+        generatePlanet() {
+          // Remove old planet objects if they exist
+          if (this.planetGroup) {
+            this.scene.remove(this.planetGroup);
+            this.planetGroup.traverse((child) => {
+              if (child.geometry) child.geometry.dispose();
+              if (child.material) {
+                if (Array.isArray(child.material)) {
+                  child.material.forEach((mat) => mat.dispose());
+                } else {
+                  child.material.dispose();
+                }
+              }
+            });
+          }
+
+          // CHECK IF WE HAVE PLANET DATA
+          console.log("[3D-VIEWER] ========== GENERATING PLANET ==========");
+          console.log("[3D-VIEWER] planetData object:", this.planetData);
+
+          const biome = this.planetData?.biome || "Temperate";
+          const temperature = this.planetData?.temperature || 285;
+          const radiusEarthRadii = this.planetData?.radius || 1.0; // In Earth radii
+          const mass = this.planetData?.mass || 1.0; // In Earth masses
+          const gravity = this.planetData?.gravity || 1.0; // Surface gravity
+
+          console.log("[3D-VIEWER] USING VALUES FOR GENERATION:");
+          console.log("[3D-VIEWER]   - Biome:", biome);
+          console.log("[3D-VIEWER]   - Temperature:", temperature, "K");
+          console.log("[3D-VIEWER]   - Mass:", mass, "Earth masses");
+          console.log(
+            "[3D-VIEWER]   - Radius:",
+            radiusEarthRadii,
+            "Earth radii"
+          );
+          console.log("[3D-VIEWER]   - Gravity:", gravity, "g");
+          console.log("[3D-VIEWER] =======================================\n");
+
+          // === SCALE PLANET FOR OPTIMAL VIEWING ===
+          // Planet radius comes in Earth radii (0.5 to 20+)
+          // Scale to scene units for comfortable viewing (100 = good baseline)
+          const radius = radiusEarthRadii * 100;
+
+          console.log(
+            `[3D-VIEWER] Planet size: ${radiusEarthRadii.toFixed(
+              2
+            )} Earth radii -> ${radius} scene units`
+          );
+
+          // Create planet group (planet + atmosphere + clouds)
+          this.planetGroup = new THREE.Group();
+
+          // === CREATE UNIQUE SEED FROM PLANET PROPERTIES ===
+          // This ensures each planet generates consistently unique terrain
+          const planetSeed =
+            biome.charCodeAt(0) * 1000 +
+            Math.floor(temperature) * 10 +
+            Math.floor(mass * 100) +
+            Math.floor(radiusEarthRadii * 50);
+          console.log(
+            "[3D-VIEWER] Planet seed for unique terrain:",
+            planetSeed
+          );
+
+          // Use seed as offset in noise calculations
+          this.noiseOffset = planetSeed * 0.001;
+
+          // === MAIN PLANET SPHERE ===
+          const segments = 128; // High detail
+          const geometry = new THREE.SphereGeometry(radius, segments, segments);
+
+          // Apply procedural terrain using vertex displacement
+          const positions = geometry.attributes.position.array;
+          const colors = new Float32Array(positions.length);
+
+          for (let i = 0; i < positions.length; i += 3) {
+            const vertex = new THREE.Vector3(
+              positions[i],
+              positions[i + 1],
+              positions[i + 2]
+            );
+
+            // Normalize to get surface position
+            const normalized = vertex.normalize();
+
+            // === SCIENTIFIC TERRAIN GENERATION ===
+
+            // 1. GRAVITY EFFECT: Higher gravity = flatter terrain (mountains can't be as tall)
+            // Surface gravity = planet_mass / (planet_radius)^2
+            // Earth's surface gravity is used as baseline
+            const surfaceGravity =
+              gravity / Math.pow(Math.max(radiusEarthRadii, 0.1), 2);
+            const gravityFactor = Math.pow(
+              1 / Math.max(surfaceGravity, 0.1),
+              0.4
+            );
+
+            // 2. TEMPERATURE EFFECT: Affects erosion and weathering
+            // Hot planets (>400K): more erosion, smoother
+            // Cold planets (<200K): less erosion, preserve sharp features
+            // Temperate (200-400K): moderate erosion
+            const tempFactor =
+              temperature > 400 ? 0.6 : temperature < 200 ? 1.3 : 1.0;
+
+            // 3. SIZE EFFECT: Larger planets have more varied terrain
+            const sizeFactor = Math.pow(Math.max(radiusEarthRadii, 0.3), 0.3);
+
+            // Generate base height using multi-octave Perlin noise
+            let height = 0;
+            let amplitude = 1.0 * gravityFactor * tempFactor * sizeFactor;
+            let frequency = 2.0;
+
+            // 4. TECTONIC ACTIVITY: Based on planet size and age
+            // Larger rocky planets = more active tectonics
+            const biomeType = biome.toLowerCase();
+            const tectonicActivity = biomeType.includes("gas")
+              ? 0
+              : mass > 0.5 && mass < 3.0
+              ? 1.2
+              : 0.8;
+
+            for (let octave = 0; octave < 6; octave++) {
+              const noiseValue = this.perlin.noise(
+                normalized.x * frequency + this.noiseOffset,
+                normalized.y * frequency + this.noiseOffset,
+                normalized.z * frequency + this.noiseOffset
+              );
+
+              height += noiseValue * amplitude * tectonicActivity;
+              amplitude *= 0.5;
+              frequency *= 2.0;
+            }
+
+            // 5. Apply biome-specific modifications with scientific basis
+            height = this.applySphericalBiomeModifications(
+              height,
+              biome,
+              normalized,
+              temperature,
+              mass,
+              radiusEarthRadii // Pass original radius in Earth radii
+            );
+
+            // 6. IMPACT CRATERS: Older, smaller planets have more visible craters
+            // (atmosphere on larger planets erodes craters)
+            if (mass < 2.0 && !biomeType.includes("gas")) {
+              const craterNoise = this.perlin.noise(
+                normalized.x * 25,
+                normalized.y * 25,
+                normalized.z * 25
+              );
+              if (craterNoise > 0.85) {
+                const craterDepth = (craterNoise - 0.85) * 3.0;
+                height -= craterDepth * (1 / Math.max(mass, 0.5));
+              }
+            }
+
+            // 7. Calculate displacement scaled by planet size
+            // Earth-sized planets: up to 10% relief
+            // Larger planets: higher absolute relief but lower % due to gravity
+            const maxDisplacement = radius * 0.12 * gravityFactor;
+            const displacement = maxDisplacement * height;
+
+            positions[i] += normalized.x * displacement;
+            positions[i + 1] += normalized.y * displacement;
+            positions[i + 2] += normalized.z * displacement;
+
+            // 8. Color based on height, biome, temperature, and latitude
+            const latitude = Math.abs(normalized.y);
+            const finalHeight = height + normalized.y * 0.3;
+            const color = this.getSphericalTerrainColor(
+              finalHeight,
+              biome,
+              temperature,
+              normalized,
+              latitude,
+              mass // Mass is already correct
+            );
+            colors[i] = color.r;
+            colors[i + 1] = color.g;
+            colors[i + 2] = color.b;
+          }
+
+          geometry.computeVertexNormals();
+          geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+          // Planet material with realistic properties
+          const planetMaterial = new THREE.MeshStandardMaterial({
+            vertexColors: true,
+            roughness: 0.7,
+            metalness: 0.1,
+            flatShading: false,
+          });
+
+          this.planet = new THREE.Mesh(geometry, planetMaterial);
+          this.planet.castShadow = true;
+          this.planet.receiveShadow = true;
+          this.planetGroup.add(this.planet);
+
+          // === ATMOSPHERE GLOW ===
+          this.addSphericalAtmosphere(radius, biome);
+
+          // === CLOUDS (for suitable biomes) ===
+          if (this.shouldHaveClouds(biome)) {
+            this.addClouds(radius, biome);
+          }
+
+          // === RINGS (for gas giants) ===
+          if (biome.toLowerCase().includes("gas")) {
+            this.addPlanetRings(radius);
+          }
+
+          this.scene.add(this.planetGroup);
+
+          // Set camera to view the planet nicely
+          this.camera.position.set(0, radius * 0.5, radius * 3);
+          this.controls.target.set(0, 0, 0);
+
+          // === DYNAMIC ZOOM LIMITS BASED ON PLANET SIZE ===
+          // Allow zooming from very close to the surface to far orbit view
+          // minDistance: Get close enough to see terrain details (1.1x radius)
+          // maxDistance: See full planet from far away (10x radius)
+          const surfaceDistance = radius * 1.1; // Just above surface
+          const orbitDistance = radius * 10; // Far orbit view
+
+          this.controls.minDistance = surfaceDistance;
+          this.controls.maxDistance = orbitDistance;
+
+          console.log(
+            `🔭 Zoom range updated: ${surfaceDistance.toFixed(
+              1
+            )} to ${orbitDistance.toFixed(1)} (planet radius: ${radius})`
+          );
+
+          this.controls.update();
+
+          // Update scene atmosphere
+          this.updateSceneAtmosphere(biome);
+        }
+
+        applySphericalBiomeModifications(
+          height,
+          biome,
+          normalizedPos,
+          temperature,
+          mass,
+          radius
+        ) {
+          const biomeType = biome.toLowerCase();
+
+          if (biomeType.includes("desert")) {
+            // Deserts: Wind erosion creates dunes (scale with atmosphere thickness)
+            // Lower mass = thinner atmosphere = sharper dunes
+            const atmosphereFactor = Math.min(mass / 1.0, 1.5);
+            height *= 0.35 * atmosphereFactor;
+
+            // Large-scale dune formations
+            const duneNoise = this.perlin.noise(
+              normalizedPos.x * 8,
+              normalizedPos.y * 8,
+              normalizedPos.z * 8
+            );
+            height += duneNoise * 0.25;
+
+            // Small ripples (based on temperature - hotter = more active)
+            const rippleFactor = temperature > 350 ? 1.2 : 0.8;
+            const rippleNoise = this.perlin.noise(
+              normalizedPos.x * 30,
+              normalizedPos.y * 30,
+              normalizedPos.z * 30
+            );
+            height += rippleNoise * 0.08 * rippleFactor;
+          } else if (biomeType.includes("volcanic")) {
+            // Volcanic: Young, active surfaces with dramatic relief
+            // Shield volcanoes (low slopes) vs stratovolcanoes (steep)
+            const volcanoType = mass > 1.5 ? "shield" : "strato";
+
+            if (volcanoType === "shield") {
+              // Shield volcanoes: gentle slopes, like Hawaii
+              height = Math.pow(Math.abs(height), 1.3) * Math.sign(height);
+            } else {
+              // Stratovolcanoes: steep, dramatic peaks
+              height = Math.pow(Math.abs(height), 2.0) * Math.sign(height);
+            }
+
+            // Volcanic cones and calderas
+            const volcanoNoise = this.perlin.noise(
+              normalizedPos.x * 3,
+              normalizedPos.y * 3,
+              normalizedPos.z * 3
+            );
+            if (volcanoNoise > 0.45) {
+              const caldera = (volcanoNoise - 0.45) * 2.5;
+              height += caldera;
+
+              // Crater at peak
+              if (volcanoNoise > 0.7) {
+                height -= (volcanoNoise - 0.7) * 1.5;
+              }
+            }
+
+            // Lava flows (smoother than surrounding terrain)
+            const lavaFlow = this.perlin.noise(
+              normalizedPos.x * 15,
+              normalizedPos.y * 15,
+              normalizedPos.z * 15
+            );
+            if (lavaFlow > 0.6) {
+              height *= 0.7; // Smooth lava plains
+            }
+          } else if (
+            biomeType.includes("ice") ||
+            biomeType.includes("tundra")
+          ) {
+            // Ice worlds: Glacial erosion creates U-shaped valleys
+            // Cryovolcanism on larger ice moons
+            height *= 0.45;
+
+            // Glacial valleys
+            const valleyNoise = this.perlin.noise(
+              normalizedPos.x * 5,
+              normalizedPos.y * 5,
+              normalizedPos.z * 5
+            );
+            if (valleyNoise < -0.2) {
+              height += (valleyNoise + 0.2) * 0.8; // Carved valleys
+            }
+
+            // Ice caps (thicker at poles, handled in color)
+            // Subsurface ocean = smoother ice shell
+            if (mass > 0.02 && radius < 50) {
+              // Moon-sized with potential ocean
+              height *= 0.7; // Smoother shell over liquid ocean
+            }
+          } else if (
+            biomeType.includes("ocean") ||
+            biomeType.includes("tropical")
+          ) {
+            // Ocean worlds: Volcanic islands, continental shelves, ocean trenches
+            // Depth varies with tectonic activity
+
+            // Continental plate distribution
+            const plateNoise = this.perlin.noise(
+              normalizedPos.x * 2,
+              normalizedPos.y * 2,
+              normalizedPos.z * 2
+            );
+
+            if (plateNoise > 0.25) {
+              // Islands and continents
+              const landHeight = (plateNoise - 0.25) * 1.8;
+              height = landHeight;
+
+              // Mountain ranges at plate boundaries
+              const mountainNoise = this.perlin.noise(
+                normalizedPos.x * 8,
+                normalizedPos.y * 8,
+                normalizedPos.z * 8
+              );
+              if (mountainNoise > 0.5 && plateNoise > 0.4) {
+                height += (mountainNoise - 0.5) * 1.0;
+              }
+            } else {
+              // Ocean floor
+              height = -0.6 + plateNoise * 0.5;
+
+              // Ocean trenches (subduction zones)
+              const trenchNoise = this.perlin.noise(
+                normalizedPos.x * 12,
+                normalizedPos.y * 12,
+                normalizedPos.z * 12
+              );
+              if (trenchNoise < -0.6) {
+                height -= (trenchNoise + 0.6) * 2.0; // Deep trenches
+              }
+            }
+          } else if (biomeType.includes("gas")) {
+            // Gas giants: Banded structure, oval storms
+            // Bands are zonal jets at different latitudes
+            const latitude = Math.abs(normalizedPos.y);
+
+            // Large-scale bands (alternating eastward/westward jets)
+            height =
+              Math.sin(normalizedPos.y * 18 + normalizedPos.x * 2) * 0.06;
+
+            // Turbulence at band boundaries
+            const turbulence = this.perlin.noise(
+              normalizedPos.x * 15,
+              normalizedPos.y * 15,
+              normalizedPos.z * 15
+            );
+            height += turbulence * 0.03;
+
+            // Great storm (like Jupiter's Great Red Spot)
+            const stormX = Math.abs(normalizedPos.x - 0.3);
+            const stormY = Math.abs(normalizedPos.y + 0.15);
+            if (stormX < 0.2 && stormY < 0.12) {
+              const stormDist = Math.sqrt(
+                Math.pow(stormX / 0.2, 2) + Math.pow(stormY / 0.12, 2)
+              );
+              if (stormDist < 1.0) {
+                height += (1.0 - stormDist) * 0.15; // Raised storm
+              }
+            }
+          } else {
+            // Temperate/Rocky: Earth-like with varied terrain
+            // Continental drift, mountain building, erosion
+            height *= 0.85;
+
+            // Mountain ranges (orogenic belts)
+            const mountainNoise = this.perlin.noise(
+              normalizedPos.x * 2.5,
+              normalizedPos.y * 2.5,
+              normalizedPos.z * 2.5
+            );
+            if (mountainNoise > 0.35) {
+              // Young, tall mountains
+              height += Math.pow((mountainNoise - 0.35) * 2, 1.5);
+            }
+
+            // River valleys (water erosion)
+            const riverNoise = this.perlin.noise(
+              normalizedPos.x * 12,
+              normalizedPos.y * 12,
+              normalizedPos.z * 12
+            );
+            if (riverNoise < -0.3 && height > 0) {
+              height *= 0.7; // Carved river valleys
+            }
+
+            // Plateaus (ancient, flat uplifted regions)
+            const plateauNoise = this.perlin.noise(
+              normalizedPos.x * 1.5,
+              normalizedPos.y * 1.5,
+              normalizedPos.z * 1.5
+            );
+            if (plateauNoise > 0.6) {
+              height = 0.5 + (plateauNoise - 0.6) * 0.3; // Flat-topped plateaus
+            }
+          }
+
+          return height;
+        }
+
+        getSphericalTerrainColor(
+          height,
+          biome,
+          temperature,
+          normalizedPos,
+          latitude,
+          mass
+        ) {
+          const biomeType = biome.toLowerCase();
+          const color = new THREE.Color();
+
+          // Latitude variation affects temperature distribution
+          // Poles are colder, equator is warmer
+
+          if (biomeType.includes("desert")) {
+            // Sandy desert colors
+            if (height < -0.2) {
+              color.setHex(0x8b7355); // Dark sand
+            } else if (height < 0.2) {
+              color.setHex(0xc2b280); // Light sand
+            } else {
+              color.setHex(0xa89968); // Rock outcrops
+            }
+          } else if (biomeType.includes("volcanic")) {
+            // Volcanic surface with lava
+            if (height < -0.3) {
+              color.setHex(0xff4500); // Molten lava
+            } else if (height < 0) {
+              color.setHex(0xff6347); // Hot rock
+            } else if (height < 0.5) {
+              color.setHex(0x2f2f2f); // Dark basalt
+            } else {
+              color.setHex(0x1a1a1a); // Black volcanic peaks
+            }
+          } else if (
+            biomeType.includes("ice") ||
+            biomeType.includes("tundra")
+          ) {
+            // Ice world
+            if (latitude > 0.6) {
+              color.setHex(0xffffff); // Polar ice caps
+            } else if (height < 0) {
+              color.setHex(0xb0e0e6); // Light blue ice
+            } else {
+              color.setHex(0xf0f8ff); // Snow
+            }
+          } else if (
+            biomeType.includes("ocean") ||
+            biomeType.includes("tropical")
+          ) {
+            // Ocean world with islands
+            if (height < -0.2) {
+              color.setHex(0x003366); // Deep ocean
+            } else if (height < 0) {
+              color.setHex(0x006994); // Shallow water
+            } else if (height < 0.2) {
+              color.setHex(0xf4e4c1); // Beach
+            } else if (height < 0.6) {
+              color.setHex(0x228b22); // Tropical vegetation
+            } else {
+              color.setHex(0x006400); // Dense forest
+            }
+          } else if (biomeType.includes("gas")) {
+            // Gas giant bands (Jupiter-like)
+            const bandValue = Math.sin(normalizedPos.y * 15) * 0.5 + 0.5;
+            if (bandValue < 0.3) {
+              color.setHex(0xd4a574); // Tan band
+            } else if (bandValue < 0.6) {
+              color.setHex(0xf4e4c1); // Light band
+            } else {
+              color.setHex(0xc89858); // Brown band
+            }
+            // Add the Great Red Spot effect
+            const spotX = Math.abs(normalizedPos.x - 0.3);
+            const spotY = Math.abs(normalizedPos.y + 0.2);
+            if (spotX < 0.15 && spotY < 0.1) {
+              color.setHex(0xff4500);
+            }
+          } else {
+            // Earth-like temperate
+            if (latitude > 0.7) {
+              color.setHex(0xffffff); // Polar caps
+            } else if (height < -0.2) {
+              color.setHex(0x003366); // Ocean
+            } else if (height < 0) {
+              color.setHex(0x006994); // Coastal water
+            } else if (height < 0.3) {
+              color.setHex(0x567d46); // Lowlands
+            } else if (height < 0.7) {
+              color.setHex(0x4a6741); // Hills/forest
+            } else if (height < 1.2) {
+              color.setHex(0x696969); // Mountains
+            } else {
+              color.setHex(0xf0f0f0); // Snow peaks
+            }
+          }
+
+          return color;
+        }
+
+        addSphericalAtmosphere(radius, biome) {
+          const biomeType = biome.toLowerCase();
+          let atmosphereColor = 0x87ceeb; // Default sky blue
+
+          if (biomeType.includes("desert")) {
+            atmosphereColor = 0xffa500; // Orange
+          } else if (biomeType.includes("volcanic")) {
+            atmosphereColor = 0xff4500; // Red/orange
+          } else if (biomeType.includes("ice")) {
+            atmosphereColor = 0xb0e0e6; // Pale blue
+          } else if (biomeType.includes("gas")) {
+            atmosphereColor = 0xffd700; // Golden
+          } else if (biomeType.includes("toxic")) {
+            atmosphereColor = 0x9acd32; // Yellow-green
+          }
+
+          // Outer atmosphere glow
+          const atmosphereGeometry = new THREE.SphereGeometry(
+            radius * 1.08,
+            64,
+            64
+          );
+          const atmosphereMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+              c: { value: 0.4 },
+              p: { value: 3.5 },
+              glowColor: { value: new THREE.Color(atmosphereColor) },
+              viewVector: { value: this.camera.position },
+            },
+            vertexShader: `
+              uniform vec3 viewVector;
+              uniform float c;
+              uniform float p;
+              varying float intensity;
+              void main() {
+                vec3 vNormal = normalize(normalMatrix * normal);
+                vec3 vNormel = normalize(normalMatrix * viewVector);
+                intensity = pow(c - dot(vNormal, vNormel), p);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              uniform vec3 glowColor;
+              varying float intensity;
+              void main() {
+                vec3 glow = glowColor * intensity;
+                gl_FragColor = vec4(glow, intensity);
+              }
+            `,
+            side: THREE.BackSide,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+          });
+
+          this.atmosphere = new THREE.Mesh(
+            atmosphereGeometry,
+            atmosphereMaterial
+          );
+          this.planetGroup.add(this.atmosphere);
+        }
+
+        shouldHaveClouds(biome) {
+          const biomeType = biome.toLowerCase();
+          return (
+            biomeType.includes("temperate") ||
+            biomeType.includes("ocean") ||
+            biomeType.includes("tropical") ||
+            biomeType.includes("earth")
+          );
+        }
+
+        addClouds(radius, biome) {
+          const cloudGeometry = new THREE.SphereGeometry(radius * 1.02, 64, 64);
+
+          // Create cloud texture procedurally
+          const cloudMaterial = new THREE.MeshStandardMaterial({
+            transparent: true,
+            opacity: 0.4,
+            side: THREE.DoubleSide,
+          });
+
+          // Generate cloud patterns using vertex colors
+          const positions = cloudGeometry.attributes.position.array;
+          const colors = new Float32Array(positions.length);
+
+          for (let i = 0; i < positions.length; i += 3) {
+            const vertex = new THREE.Vector3(
+              positions[i],
+              positions[i + 1],
+              positions[i + 2]
+            ).normalize();
+
+            // Cloud noise
+            const cloudNoise = this.perlin.noise(
+              vertex.x * 5,
+              vertex.y * 5,
+              vertex.z * 5
+            );
+
+            const cloudIntensity = cloudNoise > 0.2 ? 1 : 0;
+            colors[i] = cloudIntensity;
+            colors[i + 1] = cloudIntensity;
+            colors[i + 2] = cloudIntensity;
+          }
+
+          cloudGeometry.setAttribute(
+            "color",
+            new THREE.BufferAttribute(colors, 3)
+          );
+          cloudMaterial.vertexColors = true;
+
+          this.clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
+          this.planetGroup.add(this.clouds);
+        }
+
+        addPlanetRings(radius) {
+          const innerRadius = radius * 1.5;
+          const outerRadius = radius * 2.5;
+          const ringGeometry = new THREE.RingGeometry(
+            innerRadius,
+            outerRadius,
+            64
+          );
+
+          // Rotate ring to be horizontal
+          const pos = ringGeometry.attributes.position.array;
+          const colors = new Float32Array(pos.length);
+
+          for (let i = 0; i < pos.length; i += 3) {
+            const distance = Math.sqrt(
+              pos[i] * pos[i] + pos[i + 1] * pos[i + 1]
+            );
+            const normalizedDist =
+              (distance - innerRadius) / (outerRadius - innerRadius);
+
+            // Band colors (Saturn-like)
+            const bandNoise = this.perlin.noise(normalizedDist * 10, 0, 0);
+            const brightness = 0.5 + bandNoise * 0.5;
+
+            colors[i] = 0.7 * brightness;
+            colors[i + 1] = 0.6 * brightness;
+            colors[i + 2] = 0.5 * brightness;
+          }
+
+          ringGeometry.setAttribute(
+            "color",
+            new THREE.BufferAttribute(colors, 3)
+          );
+
+          const ringMaterial = new THREE.MeshStandardMaterial({
+            vertexColors: true,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.8,
+          });
+
+          this.rings = new THREE.Mesh(ringGeometry, ringMaterial);
+          this.rings.rotation.x = Math.PI / 2;
+          this.planetGroup.add(this.rings);
+        }
+
+        updateSceneAtmosphere(biome) {
+          const biomeType = biome.toLowerCase();
+          let bgColor = 0x000814;
+
+          if (biomeType.includes("desert")) {
+            bgColor = 0x1a0f00;
+          } else if (biomeType.includes("volcanic")) {
+            bgColor = 0x1a0000;
+          } else if (biomeType.includes("ice")) {
+            bgColor = 0x000820;
+          }
+
+          this.scene.background = new THREE.Color(bgColor);
+        }
+
+        toggleDayNight() {
+          this.isDayTime = !this.isDayTime;
+
+          if (this.isDayTime) {
+            this.sunLight.intensity = 1.5;
+            this.sunLight.position.set(500, 500, 500);
+          } else {
+            this.sunLight.intensity = 0.3;
+            this.sunLight.position.set(-500, -100, 500);
+            this.sunLight.color.setHex(0x4169e1); // Moonlight blue
+          }
+
+          document.getElementById("toggle-time").textContent = this.isDayTime
+            ? "🌙 Night"
+            : "☀️ Day";
+        }
+
+        toggleFreeCam() {
+          this.freeCamEnabled = !this.freeCamEnabled;
+          this.controls.enabled = !this.freeCamEnabled;
+
+          if (this.freeCamEnabled) {
+            document.getElementById("free-cam").style.background =
+              "rgba(76, 175, 80, 0.5)";
+            // Enable WASD controls
+            this.setupWASDControls();
+          } else {
+            document.getElementById("free-cam").style.background =
+              "rgba(255, 255, 255, 0.2)";
+            this.removeWASDControls();
+          }
+        }
+
+        setupWASDControls() {
+          const moveSpeed = 2;
+          this.keys = {};
+
+          this.keyDownHandler = (e) => {
+            this.keys[e.key.toLowerCase()] = true;
+          };
+
+          this.keyUpHandler = (e) => {
+            this.keys[e.key.toLowerCase()] = false;
+          };
+
+          document.addEventListener("keydown", this.keyDownHandler);
+          document.addEventListener("keyup", this.keyUpHandler);
+
+          this.moveCamera = () => {
+            if (!this.freeCamEnabled) return;
+
+            const direction = new THREE.Vector3();
+            this.camera.getWorldDirection(direction);
+            const right = new THREE.Vector3();
+            right.crossVectors(direction, this.camera.up).normalize();
+
+            if (this.keys["w"]) {
+              this.camera.position.add(direction.multiplyScalar(moveSpeed));
+            }
+            if (this.keys["s"]) {
+              this.camera.position.add(direction.multiplyScalar(-moveSpeed));
+            }
+            if (this.keys["a"]) {
+              this.camera.position.add(right.multiplyScalar(-moveSpeed));
+            }
+            if (this.keys["d"]) {
+              this.camera.position.add(right.multiplyScalar(moveSpeed));
+            }
+            if (this.keys["q"]) {
+              this.camera.position.y -= moveSpeed;
+            }
+            if (this.keys["e"]) {
+              this.camera.position.y += moveSpeed;
+            }
+          };
+        }
+
+        removeWASDControls() {
+          if (this.keyDownHandler) {
+            document.removeEventListener("keydown", this.keyDownHandler);
+            document.removeEventListener("keyup", this.keyUpHandler);
+          }
+          this.moveCamera = null;
+        }
+
+        setupControls() {
+          document
+            .getElementById("regenerate")
+            .addEventListener("click", () => {
+              this.generatePlanet();
+            });
+
+          document
+            .getElementById("toggle-time")
+            .addEventListener("click", () => {
+              this.toggleDayNight();
+            });
+
+          document.getElementById("free-cam").addEventListener("click", () => {
+            this.toggleFreeCam();
+          });
+
+          document
+            .getElementById("biome-selector")
+            .addEventListener("click", () => {
+              // Cycle through biomes
+              const biomes = [
+                "Temperate",
+                "Desert",
+                "Ocean",
+                "Tropical",
+                "Ice",
+                "Volcanic",
+                "Rocky",
+                "Tundra",
+              ];
+              const currentBiome = this.planetData?.biome || "Temperate";
+              const currentIndex = biomes.indexOf(currentBiome);
+              const nextBiome = biomes[(currentIndex + 1) % biomes.length];
+
+              this.planetData.biome = nextBiome;
+              this.updateInfoPanel();
+              this.generatePlanet();
+            });
+        }
+
+        updateInfoPanel() {
+          if (!this.planetData) return;
+
+          document.getElementById("planet-name").textContent = `Planet: ${
+            this.planetData.name || "Unknown"
+          }`;
+          document.getElementById("biome").textContent =
+            this.planetData.biome || "Unknown";
+          document.getElementById("temperature").textContent = `${Math.round(
+            this.planetData.temperature || 285
+          )} K`;
+          document.getElementById("gravity").textContent = `${(
+            this.planetData.mass || 1.0
+          ).toFixed(2)}g`;
+          document.getElementById("atmosphere").textContent =
+            this.planetData.atmosphere || "Unknown";
+          document.getElementById("lifeforms").textContent =
+            this.planetData.lifeforms || "None";
+        }
+
+        applyEnhancementCode(code, fromCache) {
+          try {
+            console.log("[AI-ENHANCE] Applying enhancement code...");
+            console.log(
+              "[AI-ENHANCE] Source:",
+              fromCache ? "Cache" : "AI Generated"
+            );
+            console.log("[AI-ENHANCE] Code length:", code.length, "chars");
+
+            // Execute the enhancement code in the current scope
+            // This will define the enhancePlanet function
+            eval(code);
+
+            // Check if enhancePlanet function was defined
+            if (typeof enhancePlanet === "function") {
+              console.log("[AI-ENHANCE] Calling enhancePlanet() function...");
+
+              // Call the enhancement function with scene and planet mesh
+              const result = enhancePlanet(this.scene, this.planetMesh);
+
+              console.log("[AI-ENHANCE] ✅ Enhancement applied successfully!");
+
+              // If the function returned a modified scene, use it
+              if (result && result.type === "Scene") {
+                this.scene = result;
+              }
+            } else {
+              console.error(
+                "[AI-ENHANCE] ❌ enhancePlanet function not found in code"
+              );
+            }
+          } catch (error) {
+            console.error("[AI-ENHANCE] ❌ Error applying enhancement:", error);
+            console.error("[AI-ENHANCE] Stack:", error.stack);
+          }
+        }
+
+        onWindowResize() {
+          this.camera.aspect = window.innerWidth / window.innerHeight;
+          this.camera.updateProjectionMatrix();
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        animate() {
+          requestAnimationFrame(() => this.animate());
+
+          // Update controls
+          if (this.controls) {
+            this.controls.update();
+          }
+
+          // WASD movement
+          if (this.moveCamera) {
+            this.moveCamera();
+          }
+
+          // Rotate planet slowly
+          if (this.planetGroup) {
+            this.planetGroup.rotation.y += 0.001; // Slow rotation
+          }
+
+          // Rotate clouds faster than planet
+          if (this.clouds) {
+            this.clouds.rotation.y += 0.0015;
+          }
+
+          // Update atmosphere shader uniform
+          if (this.atmosphere && this.atmosphere.material.uniforms) {
+            this.atmosphere.material.uniforms.viewVector.value =
+              new THREE.Vector3().subVectors(
+                this.camera.position,
+                this.planetGroup.position
+              );
+          }
+
+          this.renderer.render(this.scene, this.camera);
+        }
+      }
+
+      // Initialize
+      const generator = new PlanetGenerator();
+      generator.init();
+
+      // Expose to window for Flutter communication
+      window.planetGenerator = generator;
+
+      // Listen for planet data from Flutter
+      // Note: Do NOT load test data here - wait for real data from Flutter
+    </script>
+  </body>
+</html>

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KMT-2021-BLG-0736L b - Exoplanet Explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0B3D91 0%, #000428 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(11, 61, 145, 0.9);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 3px solid #FC3D21;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .planet-type {
+            display: inline-block;
+            background: #FC3D21;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .planet-viewer {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .planet-viewer iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+            border-radius: 10px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 4px solid #FC3D21;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(252, 61, 33, 0.3);
+        }
+
+        .info-card h3 {
+            color: #FC3D21;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .info-card .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: white;
+        }
+
+        .description-section {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+            line-height: 1.8;
+        }
+
+        .description-section h2 {
+            color: #FC3D21;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        .stats-section {
+            background: rgba(11, 61, 145, 0.3);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+        }
+
+        .stats-section h2 {
+            color: #FC3D21;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+        }
+
+        .stat-value {
+            color: white;
+            font-weight: bold;
+        }
+
+        .related-topics {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .related-topics h2 {
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .topics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .topic-card {
+            background: linear-gradient(135deg, rgba(11, 61, 145, 0.8) 0%, rgba(252, 61, 33, 0.6) 100%);
+            padding: 30px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: white;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: block;
+        }
+
+        .topic-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(252, 61, 33, 0.4);
+        }
+
+        .topic-card h3 {
+            font-size: 1.4em;
+            margin-bottom: 10px;
+        }
+
+        .planet-visual {
+            width: 100%;
+            height: 300px;
+            background: radial-gradient(circle at 30% 30%, #4a90e2, #0B3D91, #000428);
+            border-radius: 50%;
+            margin: 30px auto;
+            box-shadow: 0 20px 60px rgba(74, 144, 226, 0.5), inset -20px -20px 50px rgba(0,0,0,0.5);
+            animation: rotate 20s linear infinite;
+            position: relative;
+            max-width: 300px;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .planet-visual::after {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 20%;
+            width: 60%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 id="planetName">KMT-2021-BLG-0736L b</h1>
+        <span class="planet-type" id="planetType">Neptune-like</span>
+    </div>
+
+    <div class="container">
+        <!-- Planet Visual Representation -->
+        <div class="planet-viewer">
+            <div class="planet-visual"></div>
+            <p style="text-align: center; margin-top: 20px; opacity: 0.8;">
+                Artist's representation of a Neptune-like exoplanet
+            </p>
+        </div>
+
+        <!-- Interactive 3D Viewer -->
+        <div class="planet-viewer">
+            <h2 style="margin-bottom: 20px; color: #FC3D21;">Explore in 3D</h2>
+            <iframe
+                src="https://eyes.nasa.gov/apps/exo/#/planet/KTM-2019-BLG-5078L_b"
+                title="NASA Eyes on Exoplanets - KTM-2019-BLG-5078L b"
+                allow="fullscreen"
+                loading="lazy">
+            </iframe>
+        </div>
+
+        <!-- Embedded NASA Exoplanet Viewer -->
+         <div class="planet-viewer">
+
+        <iframe id="smd-iframe-smd-iframe-4a8a2eb0-616d-4cdd-b29f-94f9995b3ec5" src="https://eyes.nasa.gov/apps/exo/#/planet/WASP-102_b" title="" class="smd-iframe-iframe border-0" style="width: 100%; height: 100%;" loading="lazy" allow="fullscreen" data-gtm-yt-inspected-16="true" data-gtm-yt-inspected-21="true">Unable to render the provided source</iframe>
+        </div>
+
+        <!-- Key Information Cards -->
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>Planet Mass</h3>
+                <div class="value" id="planetMass">21 Earths</div>
+            </div>
+            <div class="info-card">
+                <h3>Planet Radius</h3>
+                <div class="value" id="planetRadius">0.433 x Jupiter</div>
+            </div>
+            <div class="info-card">
+                <h3>Orbital Period</h3>
+                <div class="value" id="orbitalPeriod">10.3 years</div>
+            </div>
+            <div class="info-card">
+                <h3>Distance from Star</h3>
+                <div class="value" id="distance">4 AU</div>
+            </div>
+        </div>
+
+        <!-- Description -->
+        <div class="description-section">
+            <h2>About This Exoplanet</h2>
+            <p id="description">
+                KMT-2021-BLG-0736L b is a Neptune-like exoplanet that orbits a Unknown-type star.
+                Its mass is 21 Earths, it takes 10.3 years to complete one orbit of its star,
+                and is 4 AU from its star. Its discovery was announced in 2025.
+            </p>
+        </div>
+
+        <!-- Detailed Statistics -->
+        <div class="stats-section">
+            <h2>Discovery & Observation Details</h2>
+            <div class="stat-row">
+                <span class="stat-label">Discovery Method</span>
+                <span class="stat-value" id="discoveryMethod">Microlensing</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Discovery Facility</span>
+                <span class="stat-value" id="facility">KMTNet</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Discovery Year</span>
+                <span class="stat-value" id="discoveryYear">2025</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Host Star Distance</span>
+                <span class="stat-value" id="starDistance">7000 light-years</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Planet Size Class</span>
+                <span class="stat-value" id="sizeClass">Neptunian</span>
+            </div>
+        </div>
+
+        <!-- Related Topics -->
+        <div class="related-topics">
+            <h2>Discover More Topics From NASA</h2>
+            <div class="topics-grid">
+                <a href="https://science.nasa.gov/universe/search-for-life/" class="topic-card">
+                    <h3>🔭 Search for Life</h3>
+                    <p>Exploring the possibility of life beyond Earth</p>
+                </a>
+                <a href="https://science.nasa.gov/universe/stars/" class="topic-card">
+                    <h3>⭐ Stars</h3>
+                    <p>Understanding stellar systems and their planets</p>
+                </a>
+                <a href="https://science.nasa.gov/universe/" class="topic-card">
+                    <h3>🌌 Universe</h3>
+                    <p>Exploring the cosmos and its mysteries</p>
+                </a>
+                <a href="https://science.nasa.gov/universe/black-holes/" class="topic-card">
+                    <h3>🕳️ Black Holes</h3>
+                    <p>The most extreme objects in the universe</p>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Planet data from JSON
+        const planetData = {
+            name: "KMT-2021-BLG-0736L b",
+            type: "Neptune-like",
+            mass: "21 Earths",
+            radius: "0.433 x Jupiter (estimate)",
+            orbitalPeriod: "10.3 years",
+            distance: "4 AU",
+            discoveryMethod: "Microlensing",
+            facility: "KMTNet",
+            discoveryYear: "2025",
+            starDistance: "7000 light-years",
+            sizeClass: "Neptunian",
+            description: "KMT-2021-BLG-0736L b is a Neptune-like exoplanet that orbits a Unknown-type star. Its mass is 21 Earths, it takes 10.3 years to complete one orbit of its star, and is 4 AU from its star. Its discovery was announced in 2025."
+        };
+
+        // Update all elements with planet data
+        document.getElementById('planetName').textContent = planetData.name;
+        document.getElementById('planetType').textContent = planetData.type;
+        document.getElementById('planetMass').textContent = planetData.mass;
+        document.getElementById('planetRadius').textContent = planetData.radius;
+        document.getElementById('orbitalPeriod').textContent = planetData.orbitalPeriod;
+        document.getElementById('distance').textContent = planetData.distance;
+        document.getElementById('description').textContent = planetData.description;
+        document.getElementById('discoveryMethod').textContent = planetData.discoveryMethod;
+        document.getElementById('facility').textContent = planetData.facility;
+        document.getElementById('discoveryYear').textContent = planetData.discoveryYear;
+        document.getElementById('starDistance').textContent = planetData.starDistance;
+        document.getElementById('sizeClass').textContent = planetData.sizeClass;
+
+        console.log("Planet Data Loaded:", planetData);
+    </script>
+</body>
+</html>

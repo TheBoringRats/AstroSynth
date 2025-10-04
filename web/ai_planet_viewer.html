@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI-Generated 3D Planet Viewer</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: #000814;
+        overflow: hidden;
+        color: white;
+      }
+
+      #canvas-container {
+        width: 100vw;
+        height: 100vh;
+      }
+
+      #loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        z-index: 1000;
+      }
+
+      .spinner {
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        border-left-color: #00d4ff;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      #status {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 14px;
+        max-width: 350px;
+        z-index: 100;
+      }
+
+      .status-item {
+        margin: 5px 0;
+        display: flex;
+        align-items: center;
+      }
+
+      .status-icon {
+        margin-right: 8px;
+      }
+
+      .success {
+        color: #00ff88;
+      }
+      .error {
+        color: #ff4444;
+      }
+      .info {
+        color: #00d4ff;
+      }
+      .warning {
+        color: #ffaa00;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loading">
+      <div class="spinner"></div>
+      <p>Initializing AI 3D Viewer...</p>
+    </div>
+
+    <div id="status">
+      <div class="status-item info">
+        <span class="status-icon">🤖</span>
+        <span>AI-Powered Planet Generator</span>
+      </div>
+      <div class="status-item" id="mode-status">
+        <span class="status-icon">⏳</span>
+        <span>Waiting for planet data...</span>
+      </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+      class AIPlanetViewer {
+        constructor() {
+          this.scene = null;
+          this.camera = null;
+          this.renderer = null;
+          this.controls = null;
+          this.planetData = null;
+          this.aiGeneratedCode = null;
+          this.currentPlanet = null;
+          this.isAIMode = false;
+
+          console.log("[AI-VIEWER] Initializing AI Planet Viewer...");
+        }
+
+        init() {
+          // Scene setup
+          this.scene = new THREE.Scene();
+          this.scene.background = new THREE.Color(0x000814);
+
+          // Camera
+          this.camera = new THREE.PerspectiveCamera(
+            60,
+            window.innerWidth / window.innerHeight,
+            1,
+            10000
+          );
+          this.camera.position.set(0, 50, 300);
+
+          // Renderer
+          this.renderer = new THREE.WebGLRenderer({ antialias: true });
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+          this.renderer.shadowMap.enabled = true;
+          document
+            .getElementById("canvas-container")
+            .appendChild(this.renderer.domElement);
+
+          // Controls
+          this.controls = new THREE.OrbitControls(
+            this.camera,
+            this.renderer.domElement
+          );
+          this.controls.enableDamping = true;
+          this.controls.dampingFactor = 0.05;
+          this.controls.maxDistance = 800;
+          this.controls.minDistance = 120;
+
+          // Lighting
+          this.setupLights();
+
+          // Stars background
+          this.createStarField();
+
+          // Event listeners
+          window.addEventListener("resize", () => this.onWindowResize());
+
+          // Listen for messages from Flutter
+          window.addEventListener("message", (event) => {
+            this.handleMessage(event);
+          });
+
+          // Animation loop
+          this.animate();
+
+          // Hide loading
+          document.getElementById("loading").style.display = "none";
+
+          console.log("[AI-VIEWER] ✅ Initialized successfully");
+          this.updateStatus("Ready for AI generation", "success");
+        }
+
+        setupLights() {
+          const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+          this.scene.add(ambientLight);
+
+          const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+          sunLight.position.set(500, 500, 500);
+          sunLight.castShadow = true;
+          this.scene.add(sunLight);
+        }
+
+        createStarField() {
+          const starsGeometry = new THREE.BufferGeometry();
+          const starsMaterial = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 1,
+            transparent: true,
+          });
+
+          const starsVertices = [];
+          for (let i = 0; i < 5000; i++) {
+            const x = (Math.random() - 0.5) * 4000;
+            const y = (Math.random() - 0.5) * 4000;
+            const z = (Math.random() - 0.5) * 4000;
+            starsVertices.push(x, y, z);
+          }
+
+          starsGeometry.setAttribute(
+            "position",
+            new THREE.Float32BufferAttribute(starsVertices, 3)
+          );
+          const stars = new THREE.Points(starsGeometry, starsMaterial);
+          this.scene.add(stars);
+        }
+
+        handleMessage(event) {
+          try {
+            let data = event.data;
+
+            if (typeof data === "string") {
+              data = JSON.parse(data);
+            }
+
+            console.log("[AI-VIEWER] Message received:", data.type);
+
+            if (data.type === "aiGeneratedCode") {
+              // AI generated Three.js code
+              this.loadAIGeneratedCode(data.code, data.planetData);
+            } else if (data.type === "planetData") {
+              // Regular planet data (fallback to procedural)
+              this.updateStatus("No AI code provided, waiting...", "warning");
+            }
+          } catch (e) {
+            console.error("[AI-VIEWER] Message parsing error:", e);
+          }
+        }
+
+        loadAIGeneratedCode(code, planetData) {
+          console.log("[AI-VIEWER] 🤖 Loading AI-generated visualization...");
+          console.log("[AI-VIEWER] Code length:", code.length);
+          console.log("[AI-VIEWER] Planet:", planetData.name);
+
+          this.updateStatus(
+            `Rendering AI visualization for ${planetData.name}`,
+            "info"
+          );
+
+          try {
+            // Remove existing planet
+            if (this.currentPlanet) {
+              this.scene.remove(this.currentPlanet);
+              this.currentPlanet = null;
+            }
+
+            // Make scene globals available for AI code
+            window.scene = this.scene;
+            window.camera = this.camera;
+            window.renderer = this.renderer;
+
+            // Execute AI-generated code
+            console.log("[AI-VIEWER] Executing AI code...");
+            eval(code);
+
+            // Call the generated function
+            if (typeof window.generateAIPlanet === "function") {
+              this.currentPlanet = window.generateAIPlanet();
+              this.isAIMode = true;
+
+              console.log("[AI-VIEWER] ✅ AI planet generated successfully!");
+              this.updateStatus(
+                `✨ AI-Generated: ${planetData.name}`,
+                "success"
+              );
+            } else {
+              throw new Error("generateAIPlanet function not found in AI code");
+            }
+          } catch (error) {
+            console.error("[AI-VIEWER] ❌ Error executing AI code:", error);
+            this.updateStatus(
+              `Error: ${error.message}. Using fallback.`,
+              "error"
+            );
+
+            // Could implement fallback here
+          }
+        }
+
+        updateStatus(message, type = "info") {
+          const statusDiv = document.getElementById("mode-status");
+          const icons = {
+            success: "✅",
+            error: "❌",
+            warning: "⚠️",
+            info: "ℹ️",
+          };
+
+          statusDiv.className = `status-item ${type}`;
+          statusDiv.innerHTML = `
+            <span class="status-icon">${icons[type] || "ℹ️"}</span>
+            <span>${message}</span>
+          `;
+        }
+
+        onWindowResize() {
+          this.camera.aspect = window.innerWidth / window.innerHeight;
+          this.camera.updateProjectionMatrix();
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        animate() {
+          requestAnimationFrame(() => this.animate());
+
+          this.controls.update();
+
+          // Rotate planet if it exists
+          if (this.currentPlanet && this.currentPlanet.rotation) {
+            this.currentPlanet.rotation.y += 0.001;
+          }
+
+          this.renderer.render(this.scene, this.camera);
+        }
+      }
+
+      // Initialize
+      const viewer = new AIPlanetViewer();
+      viewer.init();
+
+      // Expose to window for Flutter communication
+      window.aiPlanetViewer = viewer;
+    </script>
+  </body>
+</html>
