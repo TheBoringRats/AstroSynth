@@ -1,12 +1,11 @@
 import 'dart:convert';
-import 'dart:html' as html;
 import 'dart:math' as math;
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:ui_web' as ui_web;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
+import '../widgets/platform_webview/platform_webview_factory.dart';
 import '../config/constants.dart';
 import '../config/theme.dart';
 import '../models/atmospheric_profile.dart';
@@ -20,7 +19,7 @@ import '../services/habitability_calculator.dart';
 import '../services/nasa_style_page_generator.dart';
 import '../widgets/atmosphere_chart.dart';
 import '../widgets/habitability_spider_chart.dart';
-import '../widgets/planet_3d_world_viewer.dart';
+// import '../widgets/planet_3d_world_viewer.dart'; // Moved to web_only for mobile build
 import 'evolution_simulator_screen.dart';
 import 'planet_comparison_screen.dart';
 import 'terraform_simulator_screen.dart';
@@ -631,33 +630,13 @@ class _PlanetDetailScreenState extends State<PlanetDetailScreen>
     return name.replaceAll(' ', '_');
   }
 
-  /// Build NASA Eyes on Exoplanets iframe viewer
+  /// Build NASA Eyes on Exoplanets viewer (cross-platform)
   Widget _buildNASAEyesViewer() {
     final nasaFormatName = _convertPlanetNameToNASAFormat(
       widget.planet.displayName,
     );
     final nasaEyesUrl =
         'https://eyes.nasa.gov/apps/exo/#/planet/$nasaFormatName';
-
-    // Register the iframe view
-    final viewId = 'nasa-eyes-viewer-${widget.planet.displayName.hashCode}';
-
-    try {
-      ui_web.platformViewRegistry.registerViewFactory(viewId, (int vId) {
-        final iframe = html.IFrameElement()
-          ..src = nasaEyesUrl
-          ..style.width = '100%'
-          ..style.height = '100%'
-          ..style.border = 'none'
-          ..setAttribute('loading', 'lazy')
-          ..setAttribute('allow', 'fullscreen');
-
-        return iframe;
-      });
-    } catch (e) {
-      // View already registered
-      print('NASA Eyes viewer already registered: $viewId');
-    }
 
     return Container(
       width: double.infinity,
@@ -671,8 +650,11 @@ class _PlanetDetailScreenState extends State<PlanetDetailScreen>
       ),
       child: Stack(
         children: [
-          // NASA Eyes iframe
-          HtmlElementView(viewType: viewId),
+          // Cross-platform webview
+          createPlatformWebView(
+            url: nasaEyesUrl,
+            title: '🚀 NASA Eyes',
+          ),
 
           // NASA Badge
           Positioned(
@@ -1929,11 +1911,11 @@ class _PlanetDetailScreenState extends State<PlanetDetailScreen>
   }
 
   void _open3DWorldViewer() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          body: Planet3DWorldViewer(planet: widget.planet, biome: _biome),
-        ),
+    // Placeholder for mobile - 3D World Viewer not available
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🌍 3D World Viewer - Available on Web Version'),
+        duration: Duration(seconds: 2),
       ),
     );
   }

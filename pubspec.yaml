@@ -54,6 +54,14 @@ dependencies:
   url_launcher: ^6.3.0
   share_plus: ^9.0.0
 
+  # Cross-platform web support
+  universal_html: ^2.2.4
+
+  # WebView for mobile/desktop
+  webview_flutter: ^4.4.2
+  webview_flutter_android: ^3.13.0
+  webview_flutter_wkwebview: ^3.9.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
