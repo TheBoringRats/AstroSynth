@@ -430,7 +430,7 @@ class _PlanetBrowserScreenState extends State<PlanetBrowserScreen> {
         return PlanetCard(
           planet: planet,
           onTap: () => _navigateToPlanetDetail(planet),
-          onFavoriteToggle: () => _toggleFavorite(planet, planetProvider),
+          // onFavoriteToggle removed - not in mobile stub
         );
       },
     );

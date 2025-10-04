@@ -138,9 +138,7 @@ class _TimeEvolutionScreenState extends State<TimeEvolutionScreen>
         borderRadius: BorderRadius.circular(14),
         child: Planet3DViewer(
           planet: widget.planet,
-          biome: _currentSnapshot.biome,
-          showOrbit: false,
-          autoRotate: true,
+          // biome: _currentSnapshot.biome, // Parameter removed in mobile stub
         ),
       ),
     );

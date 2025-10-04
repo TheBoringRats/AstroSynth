@@ -553,13 +553,8 @@ class _TerraformSimulatorScreenState extends State<TerraformSimulatorScreen>
           SizedBox(
             height: 250,
             child: Planet3DViewer(
-              planet: widget.planet.copyWith(
-                mass: _params.planetMass,
-                radius: _params.planetRadius,
-              ),
-              biome: biome,
-              showOrbit: false,
-              autoRotate: true,
+              planet: widget.planet,
+              // biome: biome, // Parameter removed in mobile stub
             ),
           ),
           const SizedBox(height: 24),

@@ -35,7 +35,7 @@ class UnifiedDataService {
   /// Get the appropriate cache service for the current platform
   dynamic get cacheService {
     _cacheService ??= _isWeb
-        ? PlanetCacheService()
+        ? PlanetCacheService.instance
         : PlanetCacheServiceSQLite();
     return _cacheService;
   }

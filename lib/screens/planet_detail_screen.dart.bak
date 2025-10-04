@@ -736,118 +736,118 @@ class _PlanetDetailScreenState extends State<PlanetDetailScreen>
     );
   }
 
-//   Widget _buildEnhanced3DPlanet() {
-//     // Create unique ID for this large 3D view
-//     final viewId =
-//         'planet-3d-viewer-large-${widget.planet.displayName.hashCode}';
-// 
-//     // Register the Three.js 3D viewer
-//     _register3DPlanetViewer(viewId);
-// 
-//     return Container(
-//       width: double.infinity,
-//       height: double.infinity,
-//       decoration: const BoxDecoration(
-//         gradient: LinearGradient(
-//           begin: Alignment.topCenter,
-//           end: Alignment.bottomCenter,
-//           colors: [Color(0xFF000510), Color(0xFF0a0e27)],
-//         ),
-//       ),
-//       child: Stack(
-//         children: [
-//           // Three.js 3D viewer
-//           HtmlElementView(viewType: viewId),
-// 
-//           // Controls overlay
-//           Positioned(
-//             bottom: 16,
-//             left: 0,
-//             right: 0,
-//             child: Center(
-//               child: Container(
-//                 padding: const EdgeInsets.symmetric(
-//                   horizontal: 16,
-//                   vertical: 8,
-//                 ),
-//                 decoration: BoxDecoration(
-//                   color: Colors.black.withOpacity(0.7),
-//                   borderRadius: BorderRadius.circular(20),
-//                   border: Border.all(color: Colors.white.withOpacity(0.2)),
-//                 ),
-//                 child: const Row(
-//                   mainAxisSize: MainAxisSize.min,
-//                   children: [
-//                     Icon(Icons.info_outline, size: 14, color: Colors.white70),
-//                     SizedBox(width: 8),
-//                     Text(
-//                       'Drag to rotate • Scroll to zoom',
-//                       style: TextStyle(color: Colors.white70, fontSize: 12),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
+  Widget _buildEnhanced3DPlanet() {
+    // Create unique ID for this large 3D view
+    final viewId =
+        'planet-3d-viewer-large-${widget.planet.displayName.hashCode}';
 
-//   void _register3DPlanetViewer(String viewId) {
-//     // Import required for web
-//     // ignore: undefined_prefixed_name
-//     try {
-//       ui_web.platformViewRegistry.registerViewFactory(viewId, (int vId) {
-//         // Create a container div for the Three.js renderer
-//         final container = html.DivElement()
-//           ..id = viewId
-//           ..style.width = '100%'
-//           ..style.height = '100%'
-//           ..style.position = 'relative';
-// 
-//         // Pass comprehensive planet data to JavaScript
-//         final planetData = {
-//           'name': widget.planet.displayName,
-//           'temperature': widget.planet.equilibriumTemperature ?? 288.0,
-//           'mass': widget.planet.mass ?? 1.0,
-//           'radius': widget.planet.radius ?? 1.0,
-//           'density':
-//               (widget.planet.mass ?? 1.0) /
-//               math.pow(widget.planet.radius ?? 1.0, 2),
-//           'biome': _biome.type,
-//           'orbitalPeriod': widget.planet.orbitalPeriod,
-//           'eccentricity': widget.planet.eccentricity,
-//           'atmosphere': _atmosphere.dominantGas,
-//         };
-// 
-//         // Create Three.js 3D viewer with delay
-//         Future.delayed(const Duration(milliseconds: 200), () {
-//           try {
-//             final scriptElement = html.ScriptElement()
-//               ..text =
-//                   '''
-//                   if (window.create3DPlanetViewer && typeof THREE !== 'undefined') {
-//                     console.log('[3D-VIEWER] Creating Three.js 3D viewer for: ${widget.planet.displayName}');
-//                     window.create3DPlanetViewer('$viewId', ${jsonEncode(planetData)});
-//                   } else {
-//                     console.error('Three.js not loaded or create3DPlanetViewer not found');
-//                   }
-//                 ''';
-//             html.document.body?.append(scriptElement);
-//             scriptElement.remove();
-//           } catch (e) {
-//             print('Error creating 3D planet viewer: $e');
-//           }
-//         });
-// 
-//         return container;
-//       });
-//     } catch (e) {
-//       // View already registered, that's okay
-//       print('3D viewer already registered: $viewId');
-//     }
-//   }
+    // Register the Three.js 3D viewer
+    _register3DPlanetViewer(viewId);
+
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF000510), Color(0xFF0a0e27)],
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Three.js 3D viewer
+          HtmlElementView(viewType: viewId),
+
+          // Controls overlay
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.info_outline, size: 14, color: Colors.white70),
+                    SizedBox(width: 8),
+                    Text(
+                      'Drag to rotate • Scroll to zoom',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _register3DPlanetViewer(String viewId) {
+    // Import required for web
+    // ignore: undefined_prefixed_name
+    try {
+      ui_web.platformViewRegistry.registerViewFactory(viewId, (int vId) {
+        // Create a container div for the Three.js renderer
+        final container = html.DivElement()
+          ..id = viewId
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.position = 'relative';
+
+        // Pass comprehensive planet data to JavaScript
+        final planetData = {
+          'name': widget.planet.displayName,
+          'temperature': widget.planet.equilibriumTemperature ?? 288.0,
+          'mass': widget.planet.mass ?? 1.0,
+          'radius': widget.planet.radius ?? 1.0,
+          'density':
+              (widget.planet.mass ?? 1.0) /
+              math.pow(widget.planet.radius ?? 1.0, 2),
+          'biome': _biome.type,
+          'orbitalPeriod': widget.planet.orbitalPeriod,
+          'eccentricity': widget.planet.eccentricity,
+          'atmosphere': _atmosphere.dominantGas,
+        };
+
+        // Create Three.js 3D viewer with delay
+        Future.delayed(const Duration(milliseconds: 200), () {
+          try {
+            final scriptElement = html.ScriptElement()
+              ..text =
+                  '''
+                  if (window.create3DPlanetViewer && typeof THREE !== 'undefined') {
+                    console.log('[3D-VIEWER] Creating Three.js 3D viewer for: ${widget.planet.displayName}');
+                    window.create3DPlanetViewer('$viewId', ${jsonEncode(planetData)});
+                  } else {
+                    console.error('Three.js not loaded or create3DPlanetViewer not found');
+                  }
+                ''';
+            html.document.body?.append(scriptElement);
+            scriptElement.remove();
+          } catch (e) {
+            print('Error creating 3D planet viewer: $e');
+          }
+        });
+
+        return container;
+      });
+    } catch (e) {
+      // View already registered, that's okay
+      print('3D viewer already registered: $viewId');
+    }
+  }
 
   Widget _buildDataTab() {
     return SingleChildScrollView(
@@ -944,7 +944,7 @@ class _PlanetDetailScreenState extends State<PlanetDetailScreen>
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: null, // _openNASAStylePage disabled for mobile
+              onPressed: _generatingNASAPage ? null : _openNASAStylePage,
               icon: _generatingNASAPage
                   ? const SizedBox(
                       width: 20,
@@ -1025,81 +1025,81 @@ class _PlanetDetailScreenState extends State<PlanetDetailScreen>
     );
   }
 
-//   Future<void> _openNASAStylePage() async {
-//     setState(() => _generatingNASAPage = true);
-// 
-//     try {
-//       print('[NASA-VIEW] Generating page for: ${widget.planet.name}');
-// 
-//       // Generate the HTML page
-//       final htmlContent = await _nasaPageGenerator.generatePlanetPage(
-//         widget.planet,
-//         fetchNASAData: true, // Try to enhance with NASA API
-//       );
-// 
-//       // Create a blob and open in new window
-//       final blob = html.Blob([htmlContent], 'text/html');
-//       final url = html.Url.createObjectUrlFromBlob(blob);
-// 
-//       // Open in new tab
-//       html.window.open(url, '_blank');
-// 
-//       print('[NASA-VIEW] ✅ Page opened successfully');
-// 
-//       // Show success message
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           SnackBar(
-//             content: Row(
-//               children: [
-//                 const Icon(Icons.check_circle, color: Colors.white),
-//                 const SizedBox(width: 12),
-//                 Expanded(
-//                   child: Text(
-//                     'NASA-style page opened in new tab',
-//                     style: const TextStyle(color: Colors.white),
-//                   ),
-//                 ),
-//               ],
-//             ),
-//             backgroundColor: Colors.green,
-//             duration: const Duration(seconds: 3),
-//           ),
-//         );
-//       }
-// 
-//       // Clean up
-//       html.Url.revokeObjectUrl(url);
-//     } catch (e) {
-//       print('[NASA-VIEW] ❌ Error: $e');
-// 
-//       // Show error message
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           SnackBar(
-//             content: Row(
-//               children: [
-//                 const Icon(Icons.error, color: Colors.white),
-//                 const SizedBox(width: 12),
-//                 Expanded(
-//                   child: Text(
-//                     'Failed to generate page: $e',
-//                     style: const TextStyle(color: Colors.white),
-//                   ),
-//                 ),
-//               ],
-//             ),
-//             backgroundColor: Colors.red,
-//             duration: const Duration(seconds: 5),
-//           ),
-//         );
-//       }
-//     } finally {
-//       if (mounted) {
-//         setState(() => _generatingNASAPage = false);
-//       }
-//     }
-//   }
+  Future<void> _openNASAStylePage() async {
+    setState(() => _generatingNASAPage = true);
+
+    try {
+      print('[NASA-VIEW] Generating page for: ${widget.planet.name}');
+
+      // Generate the HTML page
+      final htmlContent = await _nasaPageGenerator.generatePlanetPage(
+        widget.planet,
+        fetchNASAData: true, // Try to enhance with NASA API
+      );
+
+      // Create a blob and open in new window
+      final blob = html.Blob([htmlContent], 'text/html');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+
+      // Open in new tab
+      html.window.open(url, '_blank');
+
+      print('[NASA-VIEW] ✅ Page opened successfully');
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'NASA-style page opened in new tab',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+
+      // Clean up
+      html.Url.revokeObjectUrl(url);
+    } catch (e) {
+      print('[NASA-VIEW] ❌ Error: $e');
+
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Failed to generate page: $e',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _generatingNASAPage = false);
+      }
+    }
+  }
 
   Widget _buildSectionTitle(String title) {
     return Padding(
