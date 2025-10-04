@@ -95,23 +95,8 @@ class UnifiedDataService {
 
     _isLoadingFromAPI = true;
 
-    // 2. Try bundled SQLite database (BEST - fast queries, no memory overhead)
-    if (!_isWeb) {
-      try {
-        print('[DATA] Loading planets from bundled SQLite database...');
-        final dbPlanets = await _fetchFromBundledSQLite(limit, offset);
-        if (dbPlanets.isNotEmpty) {
-          print('[SUCCESS] Loaded ${dbPlanets.length} planets from SQLite DB');
-          _isLoadingFromAPI = false;
-          // Don't cache - data is already in SQLite
-          return dbPlanets;
-        }
-      } catch (e) {
-        print('[WARNING] Bundled SQLite failed: $e');
-      }
-    }
-
-    // 3. Try bundled JSON asset (FALLBACK for web or if SQLite fails)
+    // 2. Try bundled JSON asset FIRST (Works on all platforms, reliable)
+    // This ensures consistent experience across web and mobile
     try {
       print('[DATA] Loading planets from bundled JSON (OFFLINE-FIRST)...');
       final jsonPlanets = await _fetchFromLocalJSON();
