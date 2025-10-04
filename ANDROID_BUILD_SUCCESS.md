@@ -21,7 +21,8 @@ The AstroSynth app now successfully builds for Android!
 ## 🔧 What Was Fixed
 
 ### Problems Encountered
-The app originally used web-only Dart libraries (`dart:html`, `dart:ui_web`, `dart:js`) that aren't available on mobile platforms, causing build failures.
+1. The app originally used web-only Dart libraries (`dart:html`, `dart:ui_web`, `dart:js`) that aren't available on mobile platforms, causing build failures.
+2. **NEW:** Android was loading only 100 mock planets instead of the full 6,022 planet dataset due to SQLite database loading failure.
 
 ### Solutions Implemented
 
@@ -60,6 +61,7 @@ The app originally used web-only Dart libraries (`dart:html`, `dart:ui_web`, `da
    - **unified_data_service.dart**: Changed to use `PlanetCacheService.instance`
    - **terraform_simulator_screen.dart**: Removed `biome` parameter, fixed `planet` reference
    - **time_evolution_screen.dart**: Removed `biome` parameter, fixed `planet` reference
+   - **NEW - unified_data_service.dart**: Fixed data loading to use bundled JSON (6,022 planets) instead of failing SQLite database
 
 #### 5. **NASA Eyes Integration**
    Successfully migrated to cross-platform webview:
@@ -82,7 +84,7 @@ The app originally used web-only Dart libraries (`dart:html`, `dart:ui_web`, `da
 ## 📱 Mobile App Features
 
 ### ✅ Fully Functional on Mobile
-- **Planet Browsing**: Browse and search 5000+ confirmed exoplanets
+- **Planet Browsing**: Browse and search **6,022 confirmed exoplanets** (full dataset!)
 - **Planet Details**: View comprehensive information about each planet
 - **NASA Eyes Integration**: Interactive 3D viewer via webview
 - **Filtering & Sorting**: All filtering and sorting features work
