@@ -10,7 +10,7 @@ import '../models/planet.dart';
 class AIPlanetGeneratorService {
   static const String _apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
   static const String _apiKey =
-      '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';
+      '';
   static const String _model =
       'openai/gpt-4o-mini'; // Use GPT-4 for better code generation
 
