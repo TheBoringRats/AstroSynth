@@ -3,11 +3,14 @@ set -e
 
 echo "📦 Installing Flutter SDK..."
 
-# Install Flutter - Using latest stable version
-FLUTTER_URL="https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_stable.tar.xz"
+# Install Flutter - Using specific version that matches local dev
+# Flutter 3.9.2 includes Dart 3.9.2 which matches pubspec.yaml requirements
+FLUTTER_VERSION="3.27.1"
+FLUTTER_TAR="flutter_linux_${FLUTTER_VERSION}-stable.tar.xz"
+FLUTTER_URL="https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/${FLUTTER_TAR}"
 
-echo "⬇️  Downloading Flutter (latest stable)..."
-curl -L -o flutter.tar.xz $FLUTTER_URL
+echo "⬇️  Downloading Flutter ${FLUTTER_VERSION}..."
+curl -L -o flutter.tar.xz "$FLUTTER_URL"
 
 echo "📂 Extracting Flutter..."
 tar xf flutter.tar.xz
