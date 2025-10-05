@@ -3,12 +3,10 @@ set -e
 
 echo "📦 Installing Flutter SDK..."
 
-# Install Flutter
-FLUTTER_VERSION="3.24.3"
-FLUTTER_TAR="flutter_linux_${FLUTTER_VERSION}-stable.tar.xz"
-FLUTTER_URL="https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/${FLUTTER_TAR}"
+# Install Flutter - Using latest stable version
+FLUTTER_URL="https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_stable.tar.xz"
 
-echo "⬇️  Downloading Flutter ${FLUTTER_VERSION}..."
+echo "⬇️  Downloading Flutter (latest stable)..."
 curl -L -o flutter.tar.xz $FLUTTER_URL
 
 echo "📂 Extracting Flutter..."
