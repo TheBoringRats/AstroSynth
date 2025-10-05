@@ -6,7 +6,7 @@ services:
   - type: web
     name: astrosynth-web
     env: static
-    buildCommand: flutter build web --release
+    buildCommand: bash build.sh
     staticPublishPath: ./build/web
     headers:
       - path: /*
