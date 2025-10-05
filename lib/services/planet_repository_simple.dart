@@ -18,7 +18,7 @@ class PlanetRepository {
   /// Get planets with in-memory caching
   Future<List<Planet>> getPlanets({
     bool forceRefresh = false,
-    int limit = 100,
+    int limit = 10000, // Load all planets (6022 from JSON)
   }) async {
     if (!forceRefresh && _cachedPlanets.isNotEmpty) {
       final cacheAge = _lastCacheTime != null
@@ -223,7 +223,7 @@ class PlanetRepository {
     print('Refreshing all data from NASA API...');
     _cachedPlanets.clear();
     _lastCacheTime = null;
-    await getPlanets(forceRefresh: true, limit: 100);
+    await getPlanets(forceRefresh: true, limit: 10000); // Load all planets
   }
 
   /// Calculate habitability scores for a list of planets

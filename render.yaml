@@ -1,0 +1,44 @@
+# Render.com Configuration for AstroSynth Web App
+# This file enables Infrastructure as Code deployment
+
+services:
+  # Static site deployment (RECOMMENDED - Free Tier)
+  - type: web
+    name: astrosynth-web
+    env: static
+    buildCommand: flutter build web --release
+    staticPublishPath: ./build/web
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-XSS-Protection
+        value: 1; mode=block
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /icons/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # Alternative: Docker deployment (if you need more control)
+  # Uncomment below to use Docker instead of static site
+  #
+  # - type: web
+  #   name: astrosynth-web-docker
+  #   env: docker
+  #   dockerfilePath: ./Dockerfile
+  #   dockerContext: .
+  #   plan: free
+  #   healthCheckPath: /
+  #   envVars:
+  #     - key: PORT
+  #       value: 8080

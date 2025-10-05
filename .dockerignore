@@ -1,0 +1,66 @@
+# .dockerignore - Files to exclude from Docker build
+
+# Flutter build outputs
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Test files
+test/
+integration_test/
+
+# Platform specific
+android/
+ios/
+linux/
+macos/
+windows/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Archives
+*.zip
+*.tar
+*.gz
+
+# APK/IPA builds
+*.apk
+*.ipa
+*.aab
+
+# Coverage
+coverage/
+
+# Node modules (if any)
+node_modules/

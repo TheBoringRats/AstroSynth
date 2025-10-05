@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart' show ByteData, rootBundle;
@@ -45,7 +44,7 @@ class UnifiedDataService {
   /// The app works 100% offline using bundled CSV data
   /// Uses SQLite on mobile/desktop, IndexedDB on web
   Future<List<Planet>> fetchPlanets({
-    int limit = 100,
+    int limit = 10000, // Load all planets from JSON (6022 planets)
     int offset = 0,
     bool forceRefresh = false,
   }) async {
@@ -95,7 +94,29 @@ class UnifiedDataService {
 
     _isLoadingFromAPI = true;
 
-    // 2. Try bundled SQLite database (BEST - fast queries, no memory overhead)
+    // 2. Try downloading full dataset from R2 CDN (FIRST TIME - 6022 planets)
+    try {
+      print(
+        '[DOWNLOAD] Attempting to download full planet dataset from CDN...',
+      );
+      final downloadedPlanets = await _fetchFromR2CDN();
+      if (downloadedPlanets.isNotEmpty) {
+        _cachedPlanets = downloadedPlanets;
+        _cacheTimestamp = DateTime.now();
+        _isLoadingFromAPI = false;
+
+        // Cache in storage for persistence (works offline after first download)
+        await cacheService.cachePlanets(downloadedPlanets);
+        print(
+          '✅ Downloaded and cached ${downloadedPlanets.length} planets from CDN - STORED IN DEVICE',
+        );
+        return _getPaginatedPlanets(downloadedPlanets, limit, offset);
+      }
+    } catch (e) {
+      print('⚠️ CDN Download failed: $e - falling back to bundled data');
+    }
+
+    // 3. Try bundled SQLite database (FALLBACK - fast queries, no memory overhead)
     if (!_isWeb) {
       try {
         print('[DATA] Loading planets from bundled SQLite database...');
@@ -111,7 +132,7 @@ class UnifiedDataService {
       }
     }
 
-    // 3. Try bundled JSON asset (FALLBACK for web or if SQLite fails)
+    // 4. Try bundled JSON asset (FALLBACK for web or if SQLite fails)
     try {
       print('[DATA] Loading planets from bundled JSON (OFFLINE-FIRST)...');
       final jsonPlanets = await _fetchFromLocalJSON();
@@ -131,7 +152,7 @@ class UnifiedDataService {
       print('[WARNING] JSON Asset failed: $e');
     }
 
-    // 3. Try NASA TAP API (OPTIONAL - only if CSV fails)
+    // 5. Try NASA TAP API (OPTIONAL - only if all else fails)
     try {
       print('🌐 Attempting NASA TAP API as fallback...');
       final apiPlanets = await _fetchFromTAPAPI(limit, offset);
@@ -151,13 +172,88 @@ class UnifiedDataService {
       print('⚠️ NASA TAP API failed: $e');
     }
 
-    // 4. Fallback to mock data (last resort)
+    // 6. Fallback to mock data (last resort)
     _isLoadingFromAPI = false;
     final allMockPlanets = MockPlanetData.getMockPlanets();
     print('ℹ️ Falling back to mock data (${allMockPlanets.length} planets)');
     _cachedPlanets = allMockPlanets;
     _cacheTimestamp = DateTime.now();
     return _getPaginatedPlanets(allMockPlanets, limit, offset);
+  }
+
+  /// Fetch full 6,022 planet dataset from R2 CDN
+  /// This is the PRIMARY data source - downloads on first app launch
+  /// Data is then cached permanently in device storage (IndexedDB/SQLite)
+  Future<List<Planet>> _fetchFromR2CDN() async {
+    const dataUrl =
+        'https://pub-6573ed5d95204ace89c16d7c6e541087.r2.dev/Exoplanet_FULL.json';
+
+    print('[R2 CDN] Downloading full planet dataset from: $dataUrl');
+
+    try {
+      final response = await _client
+          .get(
+            Uri.parse(dataUrl),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'AstroSynth/1.0.0',
+            },
+          )
+          .timeout(
+            const Duration(seconds: 60), // Allow 60s for large download
+            onTimeout: () {
+              throw Exception('Download timeout after 60 seconds');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        print('[R2 CDN] Download successful (${response.body.length} bytes)');
+
+        // Parse JSON array
+        final List<dynamic> jsonData = json.decode(response.body);
+        print('[R2 CDN] Parsing ${jsonData.length} planets from JSON...');
+
+        // Convert to Planet objects
+        final planets = <Planet>[];
+        int validPlanets = 0;
+        int skippedPlanets = 0;
+
+        for (var i = 0; i < jsonData.length; i++) {
+          try {
+            final planetJson = jsonData[i] as Map<String, dynamic>;
+
+            // Only require planet name
+            if (planetJson.containsKey('pl_name') &&
+                planetJson['pl_name'] != null &&
+                planetJson['pl_name'].toString().isNotEmpty) {
+              final planet = Planet.fromJson(planetJson);
+              planets.add(planet);
+              validPlanets++;
+            } else {
+              skippedPlanets++;
+            }
+          } catch (e) {
+            skippedPlanets++;
+            if (skippedPlanets < 5) {
+              print('[R2 CDN] Failed to parse planet $i: $e');
+            }
+          }
+        }
+
+        print(
+          '[R2 CDN SUCCESS] ✅ Downloaded $validPlanets planets (skipped $skippedPlanets)',
+        );
+
+        return planets;
+      } else {
+        throw Exception(
+          'HTTP ${response.statusCode}: ${response.reasonPhrase}',
+        );
+      }
+    } catch (e) {
+      print('[R2 CDN ERROR] ❌ Failed to download: $e');
+      rethrow;
+    }
   }
 
   /// Fetch from NASA TAP API using proper ADQL query format
@@ -573,6 +669,10 @@ ORDER BY disc_year DESC
     int limit,
     int offset,
   ) {
+    // If limit is very large (>= 10000), return all planets without pagination
+    if (limit >= 10000) {
+      return planets;
+    }
     final start = offset.clamp(0, planets.length);
     final end = (offset + limit).clamp(0, planets.length);
     return planets.sublist(start, end);
